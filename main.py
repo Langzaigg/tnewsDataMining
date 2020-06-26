@@ -10,7 +10,7 @@ import numpy as np
 import jieba
 import json
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
 from sklearn.metrics import classification_report
 
 label2id = {'100': 0, '101': 1, '102': 2, '103': 3, '104': 4, '106': 5, '107': 6, '108': 7, '109': 8,
@@ -29,70 +29,43 @@ for i in range(15):
         'keyword/{}.txt'.format(i), encoding='utf-8') if word.strip()])
 
 
-def load_data(path, mode):
-    if mode == 'train' or mode == 'valid':
-        label = []
-        label_desc = []
-        sentence = []
-        keyword = []
-        with open(path, 'r', encoding='utf-8') as f:
-            for line in tqdm(f):
-                keywords = np.zeros((15,), dtype=np.int32)
-                data = eval(line)
-                label.append(label2id[data['label']])
-                label_desc.append(data['label_desc'])
-                sentence.append(data['sentence'])
-                key = data['keywords'].split(',')
-                if key[0]:
-                    for i in range(15):
-                        tmp = key_word[i]
-                        for j in key:
-                            if j in tmp:
-                                keywords[i] = 1  # 出现某一类的关键词，在该类位置标1
-                else:
-                    # 原数据中若未给出关键词，使用jiaba分词
-                    key = list(jieba.lcut(data['sentence']))
-                    for i in range(15):
-                        tmp = key_word[i]
-                        for j in key:
-                            if j in tmp:
-                                keywords[i] = 1
-                keyword.append(keywords)
-        return label, label_desc, sentence, keyword
-    if mode == 'test':
-        id = []
-        sentence = []
-        keyword = []
-        with open(path, 'r', encoding='utf-8') as f:
-            for line in tqdm(f):
-                keywords = np.zeros((15,), dtype=np.int32)
-                data = eval(line)
-                id.append(data['id'])
-                sentence.append(data['sentence'])
-                key = data['keywords'].split(',')
-                if key:
-                    for i in range(15):
-                        tmp = key_word[i]
-                        for j in key:
-                            if j in tmp:
-                                keywords[i] = 1
-                else:
-                    key = list(jieba.lcut(data['sentence']))
-                    for i in range(15):
-                        tmp = key_word[i]
-                        for j in key:
-                            if j in tmp:
-                                keywords[i] = 1
-                keyword.append(keywords)
-        return id, sentence, keyword
+def load_data(path):
+    label = []
+    label_desc = []
+    sentence = []
+    keyword = []
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in tqdm(f):
+            keywords = np.zeros((15,), dtype=np.int32)
+            data = eval(line)
+            label.append(label2id[data['label']])
+            label_desc.append(data['label_desc'])
+            sentence.append(data['sentence'])
+            key = data['keywords'].split(',')
+            if key[0]:
+                for i in range(15):
+                    tmp = key_word[i]
+                    for j in key:
+                        if j in tmp:
+                            keywords[i] = 1  # 出现某一类的关键词，在该类位置标1
+            else:
+                # 原数据中若未给出关键词，使用jiaba分词
+                key = list(jieba.lcut(data['sentence']))
+                for i in range(15):
+                    tmp = key_word[i]
+                    for j in key:
+                        if j in tmp:
+                            keywords[i] = 1
+            keyword.append(keywords)
+    return label, label_desc, sentence, keyword
 
 
 train_label, train_label_desc, train_sentence, train_keywords = load_data(
-    'tnews_public/train.json', 'train')
+    'tnews_public/train.json')
 dev_label, dev_label_desc, dev_sentence, dev_keywords = load_data(
-    'tnews_public/dev.json', 'valid')
+    'tnews_public/dev.json')
 test_label, test_label_desc, test_sentence, test_keywords = load_data(
-    'tnews_public/test.json', 'valid')
+    'tnews_public/test.json')
 
 train_label += dev_label  # 训练集测试集合并
 train_label_desc += dev_label_desc
@@ -107,10 +80,10 @@ train_keywords = np.array(train_keywords)
 重要参数（可调整）
 '''
 MAX_LEN = 128
-epoch = 3
-config_path = 'chinese/bert_config.json'
-checkpoint_path = 'chinese/bert_model.ckpt'
-dict_path = 'chinese/vocab.txt'
+epoch = 4
+config_path = 'chinese_L-12_H-768_A-12/bert_config.json'
+checkpoint_path = 'chinese_L-12_H-768_A-12/bert_model.ckpt'
+dict_path = 'chinese_L-12_H-768_A-12/vocab.txt'
 batch_size = 16
 learning_rate = 2e-5
 token_dict = {}
@@ -188,7 +161,7 @@ def predicted(sentence, keyword):
     return prediction
 
 
-skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=223344)  # 五折交叉验证
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=114514)  # 五折交叉验证
 train_dev = np.zeros((len(train_sentence), 15), dtype=np.float32)  # 初始化验证结果
 test = np.zeros((len(test_sentence), 15), dtype=np.float32)  # 初始化测试集预测结果
 for fold, (train_index, valid_index) in enumerate(skf.split(train_sentence, train_label)):
@@ -218,14 +191,15 @@ for fold, (train_index, valid_index) in enumerate(skf.split(train_sentence, trai
     train_dev[valid_index] = predicted(sentence_dev, keyword_dev)
     test += predicted(test_sentence, test_keywords)
 test /= 5  # 5个模型测试集预测结果求平均
-s = '交叉验证结果：' + str(accuracy_score(train_label, np.argmax(train_dev, axis=1)))
+s = '交叉验证结果：' + \
+    str(f1_score(train_label, np.argmax(train_dev, axis=1), average='weighted'))
 s += '\n' + str(classification_report(train_label,
                                       np.argmax(train_dev, axis=1)))
-res_file = open('res_dev.txt', 'w', encoding='utf-8')
+res_file = open('train_score.txt', 'w', encoding='utf-8')
 res_file.write(s)
 res_file.close()
 
-json_file = open('tnews_test_predict.json', 'w', encoding='utf-8')  # 写入提交文件
+json_file = open('tnews_predict.json', 'w', encoding='utf-8')  # 写入提交文件
 for i in tqdm(range(len(test_sentence))):
     text, keywords = test_sentence[i], test_keywords[i]
     tmp = np.argmax(test[i])
@@ -233,24 +207,6 @@ for i in tqdm(range(len(test_sentence))):
     test_label_desc = label2desc[test_label]
     result = {"label": test_label, "label_desc": test_label_desc,
               "sentence": text}
-    json_file.write(json.dumps(result))
+    json_file.write(json.dumps(result, ensure_ascii=False))
     json_file.write('\n')
 json_file.close()
-
-"""输入一句话，输出类别"""
-text = input('请输入文本：')
-x1, x2 = tokenizer.encode(first=text, max_len=MAX_LEN)
-key = list(jieba.lcut(text))
-keywords = np.zeros((15,), dtype=np.int32)
-for i in range(15):
-    tmp = key_word[i]
-    for j in key:
-        if j in tmp:
-            keywords[i] = 1
-
-result = np.zeros((15,), dtype=np.float32)
-for i in range(5):
-    model.load_weights('model_save/bert{}.h5'.format(i))
-    result += model.predict([[x1], [x2], [keywords]])[0]
-result = np.argmax(result)
-print(label2desc[labels[int(result)]])
