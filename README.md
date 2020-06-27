@@ -3,7 +3,7 @@
 
 预训练模型：[chinese_L-12_H-768_A-12](https://drive.google.com/drive/folders/1tAIO4vcUHAxwf0KMSz73NLycjzVc7Q6v?usp=sharing)
 
-训练结果(epoch = 4):[model_save](https://drive.google.com/drive/folders/1l09n4B-7r0Qpe5lGEkF6q0XGZZfP93rV?usp=sharing)
+训练结果(epoch = 4)：[model_save](https://drive.google.com/drive/folders/1l09n4B-7r0Qpe5lGEkF6q0XGZZfP93rV?usp=sharing)
 
 五折交叉训练结果：
 
