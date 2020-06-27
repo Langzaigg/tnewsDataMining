@@ -2,6 +2,7 @@
 提取每一类的关键词
 根据训练集中给出的关键词，统计词频，选出词频前100的词
 '''
+import collections
 train_keywords100 = []
 train_keywords101 = []
 train_keywords102 = []
@@ -51,15 +52,14 @@ with open('tnews_public/train.json', 'r', encoding='utf-8') as f:
             train_keywords115 += data['keywords'].split(',')
         if data['keywords'] and data['label'] == '116':
             train_keywords116 += data['keywords'].split(',')
-import collections
 keywords = [train_keywords100, train_keywords101, train_keywords102, train_keywords103, train_keywords104,
             train_keywords106, train_keywords107, train_keywords108, train_keywords109, train_keywords110,
             train_keywords112, train_keywords113, train_keywords114, train_keywords115, train_keywords116]
 count = 0
 for key in keywords:
     f = open('keyword/{}.txt'.format(count), 'w', encoding='utf-8')
-    top100 = collections.Counter(key).most_common(100)
-    for word, i in top100:
+    top200 = collections.Counter(key).most_common(200)
+    for word, i in top200:
         f.write(word)
         f.write('\n')
     f.close()

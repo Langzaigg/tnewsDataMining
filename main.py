@@ -40,7 +40,7 @@ def load_data(path):
             data = eval(line)
             label.append(label2id[data['label']])
             label_desc.append(data['label_desc'])
-            sentence.append(data['sentence'])
+            sentence.append(''.join((data['sentence'], data['keywords'])))
             key = data['keywords'].split(',')
             if key[0]:
                 for i in range(15):
@@ -161,7 +161,8 @@ def predicted(sentence, keyword):
     return prediction
 
 
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=114514)  # 五折交叉验证
+skf = StratifiedKFold(n_splits=5, shuffle=True,
+                      random_state=25802580)  # 五折交叉验证
 train_dev = np.zeros((len(train_sentence), 15), dtype=np.float32)  # 初始化验证结果
 test = np.zeros((len(test_sentence), 15), dtype=np.float32)  # 初始化测试集预测结果
 for fold, (train_index, valid_index) in enumerate(skf.split(train_sentence, train_label)):
