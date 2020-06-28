@@ -1,7 +1,7 @@
 # fnewsDataMining
 上海大学数据挖掘课程大作业
 
-## 项目需求
+## 版本需求
 
 ```
 jieba==0.42.1
@@ -47,7 +47,6 @@ f1 Score(weighted)：0.6599897189856065
 |accuracy|0.66|58360
 |macro avg|0.66|0.64|0.64|58360
 |weighted avg|0.66|0.66|0.66|58360
-训练集结果：
 
 f1 Score(weighted)：0.681909011279105
 
