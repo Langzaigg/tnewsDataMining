@@ -3,6 +3,6 @@ Keras==2.2.4
 keras-bert==0.81.0
 numpy==1.18.1
 scikit-learn==0.22.1
-tensorflow-gpu==1.15.2
+tensorflow-gpu==2.9.3
 tqdm==4.42.1
 bert4keras==0.8.1
